@@ -1,0 +1,21 @@
+spin_manifest_version = 2
+
+[application]
+authors = ["Erno Aapa <erno.aapa@gmail.com>"]
+description = ""
+name = "apps/spin-hello-js"
+version = "0.1.0"
+
+[[trigger.http]]
+route = "/..."
+component = "apps-spin-hello-js"
+
+[component.apps-spin-hello-js]
+source = "dist/apps-spin-hello-js.wasm"
+exclude_files = ["**/node_modules"]
+allowed_outbound_hosts = [
+    # "tcp://127.0.0.1:*", # Uncomment this line to while using the StarlingMonkey Debugger
+]
+[component.apps-spin-hello-js.build]
+command = ["npm install", "npm run build"]
+watch = ["src/**/*.js"]

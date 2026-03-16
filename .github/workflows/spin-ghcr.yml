@@ -1,0 +1,65 @@
+name: Build and Push Spin App to GHCR
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install Spin CLI
+        shell: bash
+        env:
+          SPIN_VERSION: v3.6.2
+        run: |
+          curl -fsSL "https://github.com/spinframework/spin/releases/download/${SPIN_VERSION}/spin-${SPIN_VERSION}-linux-amd64.tar.gz" -o spin.tar.gz
+          tar -xzf spin.tar.gz spin
+          mkdir -p "$HOME/.local/bin"
+          mv spin "$HOME/.local/bin/spin"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          spin --version
+
+      - name: Build Spin app
+        run: spin build
+
+      - name: Compute image name
+        id: image
+        shell: bash
+        run: |
+          echo "repo=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+
+      - name: Log in to GHCR
+        if: github.event_name != 'pull_request'
+        shell: bash
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | spin registry login ghcr.io --username "${{ github.actor }}" --password-stdin
+
+      - name: Push image tags
+        if: github.event_name != 'pull_request'
+        shell: bash
+        env:
+          IMAGE_REPO: ${{ steps.image.outputs.repo }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          spin registry push "${IMAGE_REPO}:${GITHUB_SHA}"
+
+          if [ "${GITHUB_REF_NAME}" = "${DEFAULT_BRANCH}" ]; then
+            spin registry push "${IMAGE_REPO}:latest"
+          fi

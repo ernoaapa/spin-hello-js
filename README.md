@@ -3,9 +3,6 @@
 This app was created with the official Spin CLI `http-js` template and is meant
 as the simplest working SpinKube smoke test in this repository.
 
-The app image is used as the default payload for on-demand `Site`
-provisioning.
-
 Public traffic reaches provisioned services through Traefik, which terminates
 TLS and forwards plain HTTP to the internal KEDA HTTP add-on interceptor.
 
